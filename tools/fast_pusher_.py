@@ -59,6 +59,11 @@ parser.add_argument('--stamp-info-file', action='append', required=False,
 parser.add_argument('--oci', action='store_true',
                     help='Push the image with an OCI Manifest.')
 
+parser.add_argument('--ca-certs', action='store',
+                    help='Path of a file containing root CA certificates for '
+                         'SSL server certificate validation.  By default, a CA'
+                         'cert file bundled with httplib2 is used.')
+
 _THREADS = 8
 
 
@@ -115,7 +120,7 @@ def main():
   if len(args.digest or []) != len(args.layer or []):
     raise Exception('--digest and --layer must have matching lengths.')
 
-  transport = transport_pool.Http(httplib2.Http, size=_THREADS)
+  transport = transport_pool.Http(lambda: httplib2.Http(ca_certs=args.ca_certs), size=_THREADS)
 
   # Resolve the appropriate credential to use based on the standard Docker
   # client logic.
