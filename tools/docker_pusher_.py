@@ -44,6 +44,11 @@ parser.add_argument('--stamp-info-file', action='append', required=False,
 parser.add_argument('--oci', action='store_true',
                     help='Push the image with an OCI Manifest.')
 
+parser.add_argument('--ca-certs', action='store',
+                    help='Path of a file containing root CA certificates for '
+                         'SSL server certificate validation.  By default, a CA'
+                         'cert file bundled with httplib2 is used.')
+
 _THREADS = 8
 
 
@@ -71,7 +76,7 @@ def main():
   if not args.name or not args.tarball:
     raise Exception('--name and --tarball are required arguments.')
 
-  transport = transport_pool.Http(httplib2.Http, size=_THREADS)
+  transport = transport_pool.Http(lambda: httplib2.Http(ca_certs=args.ca_certs), size=_THREADS)
 
   # This library can support push-by-digest, but the likelihood of a user
   # correctly providing us with the digest without using this library
