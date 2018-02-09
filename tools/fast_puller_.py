@@ -20,6 +20,7 @@ Unlike docker_puller the format this uses is proprietary.
 
 import argparse
 import logging
+import sys
 
 from containerregistry.client import docker_creds
 from containerregistry.client import docker_name
@@ -56,6 +57,7 @@ def main():
 
   if not args.name or not args.directory:
     logging.fatal('--name and --directory are required arguments.')
+    sys.exit(1)
 
   retry_factory = retry.Factory()
   retry_factory = retry_factory.WithSourceTransportCallable(httplib2.Http)
@@ -82,6 +84,7 @@ def main():
   # pylint: disable=broad-except
   except Exception as e:
     logging.fatal('Error resolving credentials for %s: %s', name, e)
+    raise e
 
   try:
     logging.info('Pulling v2.2 image from %r ...', name)
@@ -98,6 +101,7 @@ def main():
   # pylint: disable=broad-except
   except Exception as e:
     logging.fatal('Error pulling and saving image %s: %s', name, e)
+    raise e
 
 
 if __name__ == '__main__':
