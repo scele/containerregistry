@@ -121,7 +121,8 @@ def tarball(
 def fast(
     image,
     directory,
-    threads = 1
+    threads = 1,
+    verbose = False
 ):
   """Produce a FromDisk compatible file layout under the provided directory.
 
@@ -151,8 +152,11 @@ def fast(
   def write_file(
       name,
       accessor,
-      arg
+      arg,
+      message=None
   ):
+    if verbose and message is not None:
+      print(message)
     with open(name, 'wb') as f:
       f.write(accessor(arg))
 
@@ -164,6 +168,7 @@ def fast(
     future_to_params[f] = config_file
 
     idx = 0
+    num_layers = len(image.fs_layers())
     layers = []
     for blob in reversed(image.fs_layers()):
       # Create a local copy
@@ -174,7 +179,8 @@ def fast(
       future_to_params[f] = digest_name
 
       layer_name = os.path.join(directory, '%03d.tar.gz' % idx)
-      f = executor.submit(write_file, layer_name, image.blob, blob)
+      message = 'Downloading from {} ({}/{})'.format(image.name(), idx+1, num_layers)
+      f = executor.submit(write_file, layer_name, image.blob, blob, message)
       future_to_params[f] = layer_name
 
       layers.append((digest_name, layer_name))

@@ -48,6 +48,9 @@ parser.add_argument('--name', action='store',
 parser.add_argument('--directory', action='store',
                     help='Where to save the image\'s files.')
 
+parser.add_argument('--verbose', action='store_true',
+                    help='Print something as the pull progresses.')
+
 _THREADS = 8
 
 _PROCESSOR_ARCHITECTURE = 'amd64'
@@ -107,13 +110,13 @@ def main():
     logging.info('Pulling v2.2 image from %r ...', name)
     with v2_2_image.FromRegistry(name, creds, transport, accept) as v2_2_img:
       if v2_2_img.exists():
-        save.fast(v2_2_img, args.directory, threads=_THREADS)
+        save.fast(v2_2_img, args.directory, threads=_THREADS, verbose=args.verbose)
         return
 
     logging.info('Pulling v2 image from %r ...', name)
     with v2_image.FromRegistry(name, creds, transport) as v2_img:
       with v2_compat.V22FromV2(v2_img) as v2_2_img:
-        save.fast(v2_2_img, args.directory, threads=_THREADS)
+        save.fast(v2_2_img, args.directory, threads=_THREADS, verbose=args.verbose)
         return
   # pylint: disable=broad-except
   except Exception as e:
