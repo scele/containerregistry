@@ -19,6 +19,7 @@ import cStringIO
 import hashlib
 import json
 import os
+import sys
 import tarfile
 
 import concurrent.futures
@@ -116,7 +117,7 @@ def tarball(name, image,
 
 
 def fast(image, directory,
-         threads = 1):
+         threads = 1, print_progress = False):
   """Produce a FromDisk compatible file layout under the provided directory.
 
   After calling this, the following filesystem will exist:
@@ -143,7 +144,9 @@ def fast(image, directory,
   """
 
   def write_file(name, accessor,
-                 arg):
+                 arg, message = None):
+    if print_progress and message is not None:
+      sys.stderr.write(message + "\n")
     with open(name, 'wb') as f:
       f.write(accessor(arg))
 
@@ -155,6 +158,7 @@ def fast(image, directory,
     future_to_params[f] = config_file
 
     idx = 0
+    num_layers = len(image.fs_layers())
     layers = []
     for blob in reversed(image.fs_layers()):
       # Create a local copy
@@ -168,7 +172,8 @@ def fast(image, directory,
       future_to_params[f] = digest_name
 
       layer_name = os.path.join(directory, '%03d.tar.gz' % idx)
-      f = executor.submit(write_file, layer_name, image.blob, blob)
+      message = 'Downloading from {} ({}/{})'.format(image.name(), idx+1, num_layers)
+      f = executor.submit(write_file, layer_name, image.blob, blob, message)
       future_to_params[f] = layer_name
 
       layers.append((digest_name, layer_name))
