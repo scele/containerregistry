@@ -22,6 +22,7 @@ import errno
 import io
 import json
 import os
+import sys
 import tarfile
 
 import concurrent.futures
@@ -144,7 +145,8 @@ def tarball(name, image,
 def fast(image,
          directory,
          threads = 1,
-         cache_directory = None):
+         cache_directory = None,
+         print_progress = False):
   """Produce a FromDisk compatible file layout under the provided directory.
 
   After calling this, the following filesystem will exist:
@@ -166,6 +168,7 @@ def fast(image,
     directory: an existing empty directory under which to save the layout.
     threads: the number of threads to use when performing the upload.
     cache_directory: directory that stores file cache.
+    print_progress: whether to print pull status messages to stderr.
 
   Returns:
     A tuple whose first element is the path to the config file, and whose second
@@ -174,13 +177,15 @@ def fast(image,
   """
 
   def write_file(name, accessor,
-                 arg):
+                 arg, message = None):
+    if print_progress and message is not None:
+      sys.stderr.write(message + "\n")
     with io.open(name, u'wb') as f:
       f.write(accessor(arg))
 
   def write_file_and_store(name, accessor,
-                           arg, cached_layer):
-    write_file(cached_layer, accessor, arg)
+                           arg, cached_layer, message = None):
+    write_file(cached_layer, accessor, arg, message)
     link(cached_layer, name)
 
   def link(source, dest):
@@ -225,11 +230,13 @@ def fast(image,
                     'unused')
 
     idx = 0
+    num_layers = len(image.fs_layers())
     layers = []
     for blob in reversed(image.fs_layers()):
       # Create a local copy
       layer_name = os.path.join(directory, '%03d.tar.gz' % idx)
       digest_name = os.path.join(directory, '%03d.sha256' % idx)
+      message = 'Downloading from {} (layer {}/{})'.format(image.name(), idx+1, num_layers)
       # Strip the sha256: prefix
       digest = blob[7:].encode('utf8')
       f = executor.submit(
@@ -247,10 +254,10 @@ def fast(image,
           future_to_params[f] = layer_name
         else:
           f = executor.submit(write_file_and_store, layer_name, image.blob,
-                              blob, cached_layer)
+                              blob, cached_layer, message)
           future_to_params[f] = layer_name
       else:
-        f = executor.submit(write_file, layer_name, image.blob, blob)
+        f = executor.submit(write_file, layer_name, image.blob, blob, message)
         future_to_params[f] = layer_name
 
       layers.append((digest_name, layer_name))

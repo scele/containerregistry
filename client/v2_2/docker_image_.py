@@ -277,6 +277,9 @@ class FromRegistry(DockerImage):
   def tags(self):
     return self._tags().get('tags', [])
 
+  def name(self):
+    return self._name
+
   def manifests(self):
     payload = self._tags()
     if 'manifest' not in payload:

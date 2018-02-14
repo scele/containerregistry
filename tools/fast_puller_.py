@@ -62,6 +62,9 @@ parser.add_argument(
     'located. Overiddes the value from DOCKER_CONFIG')
 parser.add_argument(
     '--cache', action='store', help='Image\'s files cache directory.')
+parser.add_argument(
+    '--print-progress', action='store_true', help='Print pull progresses to stderr.')
+
 
 _THREADS = 8
 
@@ -125,7 +128,8 @@ def main():
             v2_2_img,
             args.directory,
             threads=_THREADS,
-            cache_directory=args.cache)
+            cache_directory=args.cache,
+            print_progress=args.print_progress)
         return
 
     logging.info('Pulling v2 image from %r ...', name)
@@ -135,7 +139,8 @@ def main():
             v2_2_img,
             args.directory,
             threads=_THREADS,
-            cache_directory=args.cache)
+            cache_directory=args.cache,
+            print_progress=args.print_progress)
         return
   # pylint: disable=broad-except
   except Exception as e:
