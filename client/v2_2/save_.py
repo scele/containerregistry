@@ -187,8 +187,14 @@ def fast(
       idx += 1
 
     # Wait for completion.
-    for future in concurrent.futures.as_completed(future_to_params):
-      future.result()
+    try:
+      for future in concurrent.futures.as_completed(future_to_params):
+        future.result()
+    except KeyboardInterrupt:
+      # Workaround to kill threads on Ctrl-C.
+      executor._threads.clear()
+      concurrent.futures.thread._threads_queues.clear()
+      raise
 
   return (config_file, layers)
 
